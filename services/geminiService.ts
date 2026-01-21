@@ -1,5 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
+// Fix for TypeScript in Vite/Browser environment:
+// Declare 'process' so TypeScript doesn't throw "Cannot find name 'process'"
+declare const process: {
+  env: {
+    API_KEY: string;
+    [key: string]: string | undefined;
+  };
+};
+
 // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
 // Assume this variable is pre-configured, valid, and accessible in the execution context where the API client is initialized.
 
@@ -8,6 +17,8 @@ let ai: GoogleGenAI | null = null;
 const getAiClient = () => {
   if (ai) return ai;
   
+  // Note: If AI features are disabled via the feature flag in App.tsx, 
+  // this code path should not be reached, preventing runtime errors if the key is missing.
   ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return ai;
 };
