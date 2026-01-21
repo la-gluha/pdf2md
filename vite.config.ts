@@ -4,14 +4,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   build: {
-    target: 'esnext',
+    target: 'esnext', // Support top-level await if needed
   },
-  // Define 'process.env' as an empty object (or with specific keys) 
-  // so that `process.env.API_KEY` access doesn't crash the browser with "process is not defined".
-  // This satisfies the bundler while we control logic via feature flags.
   define: {
-    'process.env': {
-       API_KEY: process.env.VITE_API_KEY || ''
-    }
+    // Polyfill for some libraries that might expect process.env
+    'process.env': {} 
   }
 });

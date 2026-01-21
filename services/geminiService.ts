@@ -1,27 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Fix for TypeScript in Vite/Browser environment:
-// Declare 'process' so TypeScript doesn't throw "Cannot find name 'process'"
-declare const process: {
-  env: {
-    API_KEY: string;
-    [key: string]: string | undefined;
-  };
-};
-
-// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-// Assume this variable is pre-configured, valid, and accessible in the execution context where the API client is initialized.
-
-let ai: GoogleGenAI | null = null;
-
-const getAiClient = () => {
-  if (ai) return ai;
-  
-  // Note: If AI features are disabled via the feature flag in App.tsx, 
-  // this code path should not be reached, preventing runtime errors if the key is missing.
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  return ai;
-};
+// Initialize the Google GenAI client with the API key from process.env as per guidelines.
+// The API key availability is assumed to be handled externally.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Converts a File object to a Base64 string.
@@ -46,10 +27,9 @@ export const fileToBase64 = (file: File): Promise<string> => {
 export const convertPdfToMarkdown = async (file: File): Promise<string> => {
   try {
     const base64Data = await fileToBase64(file);
-    const client = getAiClient();
 
-    const response = await client.models.generateContent({
-      model: 'gemini-3-flash-preview', 
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview', // Updated to gemini-3-flash-preview as per guidelines for Basic Text Tasks
       contents: {
         parts: [
           {
