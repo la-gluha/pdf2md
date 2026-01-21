@@ -1,0 +1,5 @@
+{
+  "name": "PDF2MD Converter",
+  "description": "A professional tool to convert PDF files and folders into clean Markdown using Gemini AI.",
+  "requestFramePermissions": []
+}
