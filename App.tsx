@@ -8,12 +8,17 @@ import { convertPdfToMarkdown } from './services/geminiService';
 import { convertPdfToMarkdownLocal } from './services/localPdfService';
 import { Icons } from './components/Icons';
 
+// FEATURE FLAG: Switch this to true to re-enable AI features
+const ENABLE_AI_FEATURES = false;
+
 type ConversionMode = 'AI' | 'LOCAL';
 
 const App: React.FC = () => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
-  const [conversionMode, setConversionMode] = useState<ConversionMode>('AI');
+  
+  // Force LOCAL mode if AI is disabled
+  const [conversionMode, setConversionMode] = useState<ConversionMode>(ENABLE_AI_FEATURES ? 'AI' : 'LOCAL');
 
   // Stats
   const completedCount = files.filter(f => f.status === ProcessingStatus.COMPLETED).length;
@@ -62,7 +67,8 @@ const App: React.FC = () => {
 
       try {
         let markdown = "";
-        if (conversionMode === 'AI') {
+        // Double check flag here for safety
+        if (conversionMode === 'AI' && ENABLE_AI_FEATURES) {
           markdown = await convertPdfToMarkdown(nextFile.file);
         } else {
           markdown = await convertPdfToMarkdownLocal(nextFile.file);
@@ -114,44 +120,47 @@ const App: React.FC = () => {
             Convert PDFs to Markdown
           </h1>
           <p className="text-secondary max-w-lg mx-auto text-lg">
-            Transform your documents into clean, structured markdown using advanced AI or local processing.
+            Transform your documents into clean, structured markdown using advanced local processing.
           </p>
         </div>
 
         {/* Mode Switcher */}
         <div className="mb-8 p-1 bg-surfaceHighlight/50 rounded-xl border border-white/5 flex gap-1 shadow-inner">
-          <button
-            onClick={() => setConversionMode('AI')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              conversionMode === 'AI' 
-                ? 'bg-surface shadow-sm text-white ring-1 ring-white/10' 
-                : 'text-muted hover:text-text hover:bg-white/5'
-            }`}
-          >
-            <Icons.Sparkles className={`w-4 h-4 ${conversionMode === 'AI' ? 'text-indigo-400' : ''}`} />
-            AI Enhanced
-          </button>
+          {ENABLE_AI_FEATURES && (
+            <button
+              onClick={() => setConversionMode('AI')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                conversionMode === 'AI' 
+                  ? 'bg-surface shadow-sm text-white ring-1 ring-white/10' 
+                  : 'text-muted hover:text-text hover:bg-white/5'
+              }`}
+            >
+              <Icons.Sparkles className={`w-4 h-4 ${conversionMode === 'AI' ? 'text-indigo-400' : ''}`} />
+              AI Enhanced
+            </button>
+          )}
+          
           <button
             onClick={() => setConversionMode('LOCAL')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               conversionMode === 'LOCAL' 
                 ? 'bg-surface shadow-sm text-white ring-1 ring-white/10' 
                 : 'text-muted hover:text-text hover:bg-white/5'
-            }`}
+            } ${!ENABLE_AI_FEATURES ? 'w-full justify-center cursor-default' : ''}`}
           >
             <Icons.Zap className={`w-4 h-4 ${conversionMode === 'LOCAL' ? 'text-amber-400' : ''}`} />
-            Local Only
+            {ENABLE_AI_FEATURES ? 'Local Only' : 'Local Processing Mode'}
           </button>
         </div>
 
         {/* Upload Area */}
         <div className="w-full max-w-2xl mb-12">
            <UploadArea onFilesSelected={handleFilesSelected} />
-           {conversionMode === 'LOCAL' && (
-             <p className="text-xs text-center mt-3 text-muted">
-               Local mode runs entirely in your browser. No data leaves your device.
-             </p>
-           )}
+           <p className="text-xs text-center mt-3 text-muted">
+             {conversionMode === 'LOCAL' 
+               ? "Local mode runs entirely in your browser. No data leaves your device."
+               : "AI mode processes content securely via Gemini API."}
+           </p>
         </div>
 
         {/* Stats & List */}
