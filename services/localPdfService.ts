@@ -1,18 +1,10 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { createWorker } from 'tesseract.js';
 
-// Define the worker src.
-// We handle potential structure variations of the imported module (ESM/CJS interop)
-const pdfjs = pdfjsLib as any;
-
-// Handle different export structures that might come from the CDN/Bundler
-const GlobalWorkerOptions = pdfjs.GlobalWorkerOptions || (pdfjs.default && pdfjs.default.GlobalWorkerOptions);
-
-if (GlobalWorkerOptions) {
-    GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-} else {
-    console.warn("Could not find GlobalWorkerOptions in pdfjs-dist import");
-}
+// Setup worker for PDF.js
+// In a Vite/Webpack environment, using the CDN for the worker is often the path of least resistance
+// without complex config, ensuring it works in production builds.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 export const convertPdfToMarkdownLocal = async (file: File): Promise<string> => {
   let tesseractWorker: any = null;
@@ -20,14 +12,8 @@ export const convertPdfToMarkdownLocal = async (file: File): Promise<string> => 
   try {
     const arrayBuffer = await file.arrayBuffer();
     
-    // Load the PDF document
-    const getDocument = pdfjs.getDocument || (pdfjs.default && pdfjs.default.getDocument);
-    
-    if (!getDocument) {
-        throw new Error("PDF.js getDocument function not found");
-    }
-
-    const loadingTask = getDocument({ data: arrayBuffer });
+    // Load the PDF document using standard import
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
     
     let fullMarkdown = `# ${file.name}\n\n`;
@@ -43,20 +29,18 @@ export const convertPdfToMarkdownLocal = async (file: File): Promise<string> => 
         .join(' ');
       
       // Heuristic: If text length is very small relative to a typical page, assume it's scanned or image-based.
-      // We use 50 characters as a conservative threshold for an "empty" page that might contain an image.
       const isLikelyScanned = rawText.trim().length < 50;
       
       if (isLikelyScanned) {
          console.log(`Page ${pageNum} appears to be scanned. Starting OCR...`);
          
-         // Initialize Tesseract worker only when needed to save resources for non-scanned docs
+         // Initialize Tesseract worker only when needed
          if (!tesseractWorker) {
              console.log("Initializing Tesseract.js worker...");
              tesseractWorker = await createWorker('eng');
          }
 
          // Render page to canvas for OCR
-         // We use a scale of 2.0 to improve OCR accuracy
          const viewport = page.getViewport({ scale: 2.0 });
          const canvas = document.createElement('canvas');
          canvas.width = viewport.width;
@@ -64,7 +48,8 @@ export const convertPdfToMarkdownLocal = async (file: File): Promise<string> => 
          
          const context = canvas.getContext('2d');
          if (context) {
-             await page.render({ canvasContext: context, viewport }).promise;
+             // Cast options to any to satisfy RenderParameters type definition which expects 'canvas' or specific context types
+             await page.render({ canvasContext: context, viewport } as any).promise;
              
              // Run recognition
              const { data: { text } } = await tesseractWorker.recognize(canvas);

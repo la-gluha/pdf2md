@@ -1,6 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+// Assume this variable is pre-configured, valid, and accessible in the execution context where the API client is initialized.
+
+let ai: GoogleGenAI | null = null;
+
+const getAiClient = () => {
+  if (ai) return ai;
+  
+  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return ai;
+};
 
 /**
  * Converts a File object to a Base64 string.
@@ -25,9 +35,10 @@ export const fileToBase64 = (file: File): Promise<string> => {
 export const convertPdfToMarkdown = async (file: File): Promise<string> => {
   try {
     const base64Data = await fileToBase64(file);
+    const client = getAiClient();
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Good balance of speed and context window for docs
+    const response = await client.models.generateContent({
+      model: 'gemini-3-flash-preview', 
       contents: {
         parts: [
           {
