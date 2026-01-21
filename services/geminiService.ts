@@ -1,7 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize the Google GenAI client with the API key from process.env as per guidelines.
-// The API key availability is assumed to be handled externally.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
@@ -29,7 +27,7 @@ export const convertPdfToMarkdown = async (file: File): Promise<string> => {
     const base64Data = await fileToBase64(file);
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Updated to gemini-3-flash-preview as per guidelines for Basic Text Tasks
+      model: 'gemini-3-flash-preview', // Good balance of speed and context window for docs
       contents: {
         parts: [
           {
